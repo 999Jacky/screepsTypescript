@@ -16,4 +16,13 @@ export class Mine {
       CreepUtil.lockWorkTarget(creep, newTarget);
     }
   }
+
+  public static Clear(memory: CreepMemory) {
+    const targetId = memory.target;
+    if (targetId) {
+      const energyObj = Game.getObjectById(targetId);
+      const energyStatus = Memory.energyPoint[energyObj.room.name].find((p) => p.id === targetId)!;
+      energyStatus.isMining = false;
+    }
+  }
 }

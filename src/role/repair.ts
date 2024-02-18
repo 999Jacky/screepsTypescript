@@ -8,10 +8,18 @@ export class Repair {
   };
 
   private static repair(creep: Creep) {
-    const targetId = Brain.getRepairTarget();
-    if (targetId) {
+    let targetId = creep.memory.target;
+    if (!creep.memory.target) {
+      targetId = Brain.getRepairTarget();
       CreepUtil.lockWorkTarget(creep, targetId);
-      const targetObj = Game.getObjectById(targetId)!;
+    }
+    if (targetId) {
+      const targetObj = Game.getObjectById<Structure>(targetId)!;
+      if (targetObj.hits > targetObj.hitsMax / 2) {
+        CreepUtil.freeCreepWork(creep);
+        creep.say('change');
+        return;
+      }
       creep.say(`r:${targetObj.hits}`);
       if (creep.repair(targetObj) === ERR_NOT_IN_RANGE) {
         creep.moveTo(targetObj, { visualizePathStyle: { stroke: '#ffffff' } });
@@ -22,9 +30,8 @@ export class Repair {
   }
 
   public static Run(creep: Creep) {
-    const isCanWorking = !CreepUtil.checkIsNeedEnergy(creep);
-    creep.memory.working = isCanWorking;
-    if (isCanWorking) {
+    CreepUtil.setCreepCanWorking(creep);
+    if (creep.memory.working) {
       this.repair(creep);
     } else {
       CreepUtil.freeCreepWork(creep);

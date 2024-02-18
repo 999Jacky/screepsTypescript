@@ -14,13 +14,24 @@ export class Spawn {
     }
     const energy = CreepUtil.getRoomNowEnergy(structureSpawn.room.name);
     const { bodyPart, level } = CreepUtil.getCreepBodyPart(bodyConfig, energy);
-    return structureSpawn.spawnCreep(bodyPart, `${role}${Game.time}`, { memory: CreepUtil.newCreepMem(role, level) }) === OK;
+    let name = `${role}${Game.time}`;
+    if (level === 0) {
+      name = `Low${name}`;
+    }
+    const isOk = structureSpawn.spawnCreep(bodyPart, name, { memory: CreepUtil.newCreepMem(role, level) }) === OK;
+    if (isOk) {
+      console.log(`spawning ${name}`);
+    } else {
+      console.log(`spawning FAIL: ${name}`);
+    }
+    return isOk;
   };
 
   private static spawnHarvester = (spawnPoint: StructureSpawn) => {
     const harvester = CreepUtil.findTargetCreeper(Role.harvest);
     if (harvester.length < 2) {
-      return this.spawnNewCreep(spawnPoint, Harvester.bodyConfig, Role.harvest);
+      this.spawnNewCreep(spawnPoint, Harvester.bodyConfig, Role.harvest);
+      return true;
     }
     return false;
   };
@@ -28,7 +39,8 @@ export class Spawn {
   private static spawnMiner = (spawnPoint: StructureSpawn) => {
     const miner = CreepUtil.findTargetCreeper(Role.mine);
     if (miner.length < Memory.energyPointCount) {
-      return this.spawnNewCreep(spawnPoint, Mine.bodyConfig, Role.mine);
+      this.spawnNewCreep(spawnPoint, Mine.bodyConfig, Role.mine);
+      return true;
     }
     return false;
   };
@@ -37,7 +49,8 @@ export class Spawn {
     const builder = CreepUtil.findTargetCreeper(Role.build);
     const cs = Object.keys(Game.constructionSites);
     if (cs.length / 2 > builder.length) {
-      return this.spawnNewCreep(spawnPoint, Builder.bodyConfig, Role.build);
+      this.spawnNewCreep(spawnPoint, Builder.bodyConfig, Role.build);
+      return true;
     }
     return false;
   }
@@ -45,7 +58,8 @@ export class Spawn {
   private static spawnCarrier(spawnPoint: StructureSpawn) {
     const carrier = CreepUtil.findTargetCreeper(Role.carry);
     if (carrier.length < 5) {
-      return this.spawnNewCreep(spawnPoint, Carrier.bodyConfig, Role.carry);
+      this.spawnNewCreep(spawnPoint, Carrier.bodyConfig, Role.carry);
+      return true;
     }
     return false;
   }
@@ -53,7 +67,17 @@ export class Spawn {
   private static spawnUpgrader(spawnPoint: StructureSpawn) {
     const upgrader = CreepUtil.findTargetCreeper(Role.upgrade);
     if (upgrader.length < 10) {
-      return this.spawnNewCreep(spawnPoint, Upgrade.bodyConfig, Role.upgrade);
+      this.spawnNewCreep(spawnPoint, Upgrade.bodyConfig, Role.upgrade);
+      return true;
+    }
+    return false;
+  }
+
+  private static spawnLowUpgrader(spawnPoint: StructureSpawn) {
+    const upgrader = CreepUtil.findTargetCreeper(Role.upgrade);
+    if (upgrader.length < 2) {
+      this.spawnNewCreep(spawnPoint, Upgrade.bodyConfig, Role.upgrade);
+      return true;
     }
     return false;
   }
@@ -61,7 +85,8 @@ export class Spawn {
   private static spawnRepair(spawnPoint: StructureSpawn) {
     const repair = CreepUtil.findTargetCreeper(Role.repair);
     if (repair.length < 3) {
-      return this.spawnNewCreep(spawnPoint, Repair.bodyConfig, Role.repair);
+      this.spawnNewCreep(spawnPoint, Repair.bodyConfig, Role.repair);
+      return true;
     }
     return false;
   }
@@ -80,7 +105,7 @@ export class Spawn {
     if (this.spawnHarvester(spawn)) {
       return;
     }
-    if (this.spawnUpgrader(spawn)) {
+    if (this.spawnLowUpgrader(spawn)) {
       return;
     }
     if (this.spawnRepair(spawn)) {
@@ -93,6 +118,9 @@ export class Spawn {
       return;
     }
     if (this.spawnBuilder(spawn)) {
+      return;
+    }
+    if (this.spawnUpgrader(spawn)) {
       return;
     }
   }

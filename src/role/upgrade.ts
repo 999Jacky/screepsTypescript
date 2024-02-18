@@ -8,10 +8,9 @@ export class Upgrade {
   };
 
   public static Run(creep: Creep) {
-    const isCanWorking = !CreepUtil.checkIsNeedEnergy(creep);
-    creep.memory.working = isCanWorking;
+    CreepUtil.setCreepCanWorking(creep);
 
-    if (isCanWorking) {
+    if (creep.memory.working) {
       const baseController = Game.rooms[Memory.baseRoomName].controller!
       if (creep.upgradeController(baseController) === ERR_NOT_IN_RANGE) {
         creep.moveTo(baseController);

@@ -34,9 +34,9 @@ export class Builder {
   }
 
   public static Run(creep: Creep) {
-    const isCanWorking = !CreepUtil.checkIsNeedEnergy(creep);
-    creep.memory.working = isCanWorking;
-    if (isCanWorking) {
+    CreepUtil.setCreepCanWorking(creep);
+
+    if (creep.memory.working) {
       this.repairOnMove(creep);
       this.buildTarget(creep);
     } else {

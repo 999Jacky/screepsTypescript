@@ -1,7 +1,10 @@
+import { RoomName } from '../main';
+
 export interface EnergyPoint {
   id: Id<Source>;
+  room: RoomName,
   isMining: boolean;
-  carryCount: number;
+  dropEnergyRemain: number;
 }
 
 export interface roomStatus {

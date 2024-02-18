@@ -1,5 +1,6 @@
 import { EnergyPoint } from './interface';
 import { StructureUtil } from '../utils/StructureUtil';
+import _ from 'lodash';
 
 export class Brain {
 
@@ -28,12 +29,9 @@ export class Brain {
         allPoints.push(energyPoint);
       }
     }
-    const nonCarryPoint = allPoints.find((p) => p.carryCount === 0);
-    if (nonCarryPoint) {
-      return nonCarryPoint.id;
-    }
-
-    return allPoints.sort((a, b) => a.carryCount - b.carryCount)[0].id;
+    const target = allPoints.sort((a, b) => b.dropEnergyRemain - b.dropEnergyRemain)[0];
+    target.dropEnergyRemain -= creep.store.getFreeCapacity();
+    return target.id;
   }
 
   public static getBuildTarget(creep: Creep) {
@@ -73,24 +71,30 @@ export class Brain {
     let newEnergyCount = 0;
     for (const roomName of rooms) {
       const room = Game.rooms[roomName];
+      const isReserve = room.controller?.reservation?.username === Memory.userName || room.controller?.owner?.username === Memory.userName;
       Memory.energyRoom.push({
         name: roomName,
         energyAvailable: room.energyAvailable,
-        isReserve: room.controller?.reservation?.username === Memory.userName
+        isReserve: isReserve
       });
 
       const newEnergyRecord: EnergyPoint[] = [];
       const roomEnergy = room.find(FIND_SOURCES_ACTIVE);
       for (const energy of roomEnergy) {
         newEnergyCount += 1;
-        const existRecord = Memory.energyPoint[roomName].find((p) => p.id === energy.id);
+        const existRoom = Memory?.energyPoint[roomName];
+        const existRecord = existRoom?.find((p) => p.id === energy.id) ?? null;
+        const dropEnergy = energy.pos.findInRange(FIND_DROPPED_RESOURCES, 3) ?? [];
         if (existRecord) {
+          existRecord.isMining = false;
+          existRecord.dropEnergyRemain = this.sumEnergyAmount(dropEnergy);
           newEnergyRecord.push(existRecord);
         } else {
           newEnergyRecord.push({
             id: energy.id,
+            room: roomName,
             isMining: false,
-            carryCount: 0
+            dropEnergyRemain: this.sumEnergyAmount(dropEnergy)
           });
         }
       }
@@ -98,6 +102,18 @@ export class Brain {
       Memory.energyPointCount = newEnergyCount;
     }
 
+    const claimFlag = Game.flags['claim'];
+    if (claimFlag) {
+      Memory.nextRoom = claimFlag.room?.name!;
+    }
+  }
+
+  private static sumEnergyAmount(res: Resource[]) {
+    let sum = 0;
+    for (const r of res) {
+      sum += r.amount;
+    }
+    return sum;
   }
 
   public static Init() {
@@ -105,7 +121,9 @@ export class Brain {
     if (!Memory.nextRoom) {
       Memory.nextRoom = null;
     }
-    Memory.baseRoomName = Game.spawns[0].room.name;
+    const spawns = Object.keys(Game.spawns);
+    Memory.baseRoomName = Game.spawns[spawns[0]].room.name;
+    Memory.energyPoint = {};
     this.refreshStatus();
     Memory.isInit = true;
   }

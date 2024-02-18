@@ -1,12 +1,12 @@
 import { Role } from '../role/role';
 import _ from 'lodash';
-import { Room } from '../main';
+import { RoomName } from '../main';
 
 export class CreepUtil {
 
   public static findTargetCreeper = (role: Role) => _.filter(Game.creeps, (c) => c.memory.role === role);
 
-  public static getRoomNowEnergy = (room: Room) => Game.rooms[room].energyAvailable;
+  public static getRoomNowEnergy = (room: RoomName) => Game.rooms[room].energyAvailable;
 
   public static getCreepBodyPart = (config: Record<number, BodyPartConstant[]>, energyCount: number) => {
     let bodyPart: BodyPartConstant[] = [WORK, CARRY, MOVE];
@@ -68,12 +68,14 @@ export class CreepUtil {
     }
   };
 
-  public static checkIsNeedEnergy = (creep: Creep) => {
-    if (creep.store[RESOURCE_ENERGY] === 0) {
+  public static setCreepCanWorking = (creep: Creep) => {
+    if (creep.memory.working && creep.store[RESOURCE_ENERGY] === 0) {
       creep.memory.energySourceId = null;
-      return true;
+      creep.memory.working = false;
     }
-    return false;
+    if (!creep.memory.working && creep.store.getFreeCapacity() === 0) {
+      creep.memory.working = true;
+    }
   };
 
   public static lockWorkTarget(creep: Creep, targetId?: Id<any> | null) {
@@ -100,16 +102,25 @@ export class CreepUtil {
 
   public static mimeTargetEnergy(creep: Creep, targetId: Id<Source>) {
     const energyObj = Game.getObjectById(targetId);
-    if (!energyObj || energyObj.energy === 0) {
+    if (!energyObj) {
       return this.mineRandomEnergy(creep);
     }
+    if (energyObj.energy === 0) {
+      const energyStatus = Memory.energyPoint[energyObj.room.name].find((p) => p.id === targetId)!;
+      energyStatus.isMining = false;
+      return this.mineRandomEnergy(creep);
+
+    }
+    const energyStatus = Memory.energyPoint[energyObj.room.name].find((p) => p.id === targetId)!;
+    energyStatus.isMining = true;
     if (creep.harvest(energyObj) === ERR_NOT_IN_RANGE) {
       creep.moveTo(energyObj, { visualizePathStyle: { stroke: '#ffaa00' } });
     }
     return energyObj.id;
   }
 
-  public static carryOrMineEnergy(creep: Creep, targetId?: Id<Source>) {
+  public static carryOrMineEnergy(creep: Creep) {
+    const targetId = creep.memory.energySourceId;
     if (targetId) {
       creep.memory.energySourceId = targetId;
       const sourceObj = Game.getObjectById(targetId);
@@ -128,6 +139,10 @@ export class CreepUtil {
   public static carrySourceNearbyEnergy(creep: Creep, targetId: Id<Source>) {
     creep.memory.energySourceId = targetId;
     const sourceObj = Game.getObjectById(targetId);
+    if (!sourceObj) {
+      creep.memory.energySourceId = null;
+      return null;
+    }
     const dropEnergy = sourceObj?.pos.findInRange(FIND_DROPPED_RESOURCES, 3) ?? [];
     if (dropEnergy.length > 0) {
       if (this.carryEnergyTarget(creep, dropEnergy[0])) {

@@ -12,7 +12,7 @@ export class Carrier {
   private static fillSpawn(creep: Creep) {
     const spawns = Object.values(Game.spawns);
     for (const spawn of spawns) {
-      if (spawn.store.getFreeCapacity()! > 0) {
+      if (spawn.store[RESOURCE_ENERGY] > 0) {
         if (creep.transfer(spawn, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
           creep.moveTo(spawn, { visualizePathStyle: { stroke: '#ffffff' } });
         }
@@ -50,9 +50,9 @@ export class Carrier {
 
 
   public static Run(creep: Creep) {
-    const isCanWorking = !CreepUtil.checkIsNeedEnergy(creep);
-    creep.memory.working = isCanWorking;
-    if (isCanWorking) {
+    CreepUtil.setCreepCanWorking(creep);
+    if (creep.memory.working) {
+
       if (this.fillSpawn(creep)) {
         return;
       }
@@ -66,4 +66,5 @@ export class Carrier {
       CreepUtil.carrySourceNearbyEnergy(creep, targetId);
     }
   }
+
 }

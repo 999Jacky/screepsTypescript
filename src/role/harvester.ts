@@ -8,14 +8,16 @@ export class Harvester {
   public static feedSpawn = (creep: Creep) => {
     const needEnergySpawn = StructureUtil.findNeedEnergySpawn(creep);
     if (needEnergySpawn) {
-      return CreepUtil.transferEnergy(creep, needEnergySpawn);
+      CreepUtil.transferEnergy(creep, needEnergySpawn);
+      return true;
     }
     return false;
   };
   public static feedStructures = (creep: Creep) => {
     const structure = StructureUtil.findClosestNeedEnergyStructure(creep);
     if (structure) {
-      return CreepUtil.transferEnergy(creep, structure);
+      CreepUtil.transferEnergy(creep, structure);
+      return true;
     }
     return false;
   };
@@ -26,9 +28,9 @@ export class Harvester {
     }
   };
   public static Run = (creep: Creep) => {
-    const isCanWorking = !CreepUtil.checkIsNeedEnergy(creep);
-    creep.memory.working = isCanWorking;
-    if (isCanWorking) {
+    CreepUtil.setCreepCanWorking(creep);
+
+    if (creep.memory.working) {
       if (this.feedSpawn(creep)) {
         return;
       }
