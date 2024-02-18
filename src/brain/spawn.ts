@@ -29,7 +29,9 @@ export class Spawn {
 
   private static spawnHarvester = (spawnPoint: StructureSpawn) => {
     const harvester = CreepUtil.findTargetCreeper(Role.harvest);
-    if (harvester.length < 2) {
+    const carrier = CreepUtil.findTargetCreeper(Role.carry);
+    const miner = CreepUtil.findTargetCreeper(Role.mine);
+    if ((miner.length === 0 || carrier.length < 2) && harvester.length < 2) {
       this.spawnNewCreep(spawnPoint, Harvester.bodyConfig, Role.harvest);
       return true;
     }
